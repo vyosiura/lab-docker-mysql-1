@@ -1,0 +1,60 @@
+version: "3.5"
+services:
+    proxysql:
+        container_name: proxysql
+        ports:
+            - "6032:6032"
+            - "6033:6033"
+        volumes: 
+            - ./proxysql.cnf:/etc/proxysql.cnf
+        image: "proxysql/proxysql:latest"
+        depends_on: 
+            - mysql_1
+            - mysql_2
+        networks:
+            - lab-network
+    mysql_1:
+        container_name: mysql_1
+        ports: 
+            - "3306:3306"
+        image: "percona:8.0"
+        environment: 
+            - "MYSQL_ROOT_PASSWORD=root"
+        networks: 
+            - lab-network
+        volumes:
+            - ./init_script1.sql:/docker-entrypoint-initdb.d/init_script1.sql
+            - ./mysql_1.cnf:/etc/my.cnf.d/mysql_1.cnf
+            - v_mysql_1:/var/lib/mysql
+    mysql_2:
+        container_name: mysql_2
+        ports:
+            - "3307:3306"
+        image: "percona:8.0"
+        environment: 
+            - "MYSQL_ROOT_PASSWORD=root"
+        networks: 
+            - lab-network
+        volumes: 
+            - ./mysql_2.cnf:/etc/my.cnf.d/mysql_2.cnf
+            - ./repl_init.sh:/docker-entrypoint-initdb.d/repl_init.sh
+            - v_mysql_2:/var/lib/mysql
+    pmm_server:
+        container_name: pmm_server
+        ports:
+            - 443:443
+            - 80:80
+        image: percona/pmm-server:2
+        networks: 
+            - lab-network
+        volumes:
+            - pmm:/srv
+        environment: 
+            - "ENABLE_DBAAS=1"
+            - "METRICS_RESOLUTION=2s"
+volumes:
+    v_mysql_1:
+    v_mysql_2:
+    pmm:
+networks: 
+    lab-network:
